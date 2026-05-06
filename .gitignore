@@ -1,0 +1,10 @@
+# Local secrets
+.env
+
+# GoAccess output
+goaccess/report/*.html
+goaccess/report/*.json
+
+# Editor / OS noise
+.DS_Store
+*.swp
