@@ -24,10 +24,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       DATABASE_TYPE: postgresql
       APP_SECRET: ${APP_SECRET}
-      BASE_PATH: ${BASE_PATH}
-    # Bind to localhost only — Nginx on the host reverse-proxies it.
+    # Exposed directly on the host for access via http://<host>:3000/
+    # (Azure NSG must allow inbound TCP/3000).
     ports:
-      - "127.0.0.1:3000:3000"
+      - "0.0.0.0:3000:3000"
 
 volumes:
   umami-db:
