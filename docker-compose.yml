@@ -8,6 +8,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - umami-db:/var/lib/postgresql/data
+    # Bind to loopback so other host-side services (e.g. vpn-monitor collector)
+    # can reach Postgres without going through the docker network.
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -15,7 +19,15 @@ services:
       retries: 5
 
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    # Built from source so BASE_PATH gets baked into the Next.js bundle —
+    # the prebuilt postgresql-latest image has no basePath, which breaks
+    # the /_next/* and /api/* asset paths under the /umami subroute.
+    build:
+      context: https://github.com/umami-software/umami.git#master
+      args:
+        BASE_PATH: /umami
+        DATABASE_TYPE: postgresql
+    image: umami-basepath:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -24,10 +36,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       DATABASE_TYPE: postgresql
       APP_SECRET: ${APP_SECRET}
-    # Exposed directly on the host for access via http://<host>:3000/
-    # (Azure NSG must allow inbound TCP/3000).
+      BASE_PATH: /umami
+    # Loopback only — host nginx terminates TLS and serves Umami under
+    # https://<host>/umami/. See snippets/traffic-monitor.conf.
     ports:
-      - "0.0.0.0:3000:3000"
+      - "127.0.0.1:3000:3000"
 
 volumes:
   umami-db:
